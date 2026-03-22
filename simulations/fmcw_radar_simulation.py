@@ -1,1 +1,0 @@
-EchoPulse Simulation Screenshot
