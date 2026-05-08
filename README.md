@@ -10,7 +10,7 @@
 
 - Shahd Al-Ananzeh
 - Ibrahim Ba'arah
-- Dana Bani Malhem
+- Dana Bani Melhem
 - Mariam Abu Shaqir
 - Alaa Al-Ghazawi
 
