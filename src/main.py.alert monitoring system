@@ -1,0 +1,110 @@
+import requests
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# =========================
+# TELEGRAM BOT
+# =========================
+TOKEN = "TOKEN"
+API = f"https://api.telegram.org/bot{TOKEN}"
+
+users = set()
+
+# =========================
+# USERS
+# =========================
+def update_users():
+
+    try:
+        data = requests.get(API + "/getUpdates").json()
+
+        for u in data.get("result", []):
+
+            msg = u.get("message")
+
+            if msg:
+
+                chat_id = msg["chat"]["id"]
+
+                users.add(chat_id)
+
+    except:
+        pass
+
+
+# =========================
+# DATA
+# =========================
+regions = {
+    "Ajloun": {
+        "rain": 85,
+        "water_level": 80,
+        "humidity": 70,
+        "turbidity": 6
+    },
+
+    "Petra": {
+        "rain": 75,
+        "water_level": 65,
+        "humidity": 60,
+        "turbidity": 7
+    }
+}
+
+# =========================
+# RISK MODEL
+# =========================
+def calculate_score(d):
+
+    score = (
+        d["rain"] * 0.35 +
+        d["water_level"] * 0.35 +
+        d["humidity"] * 0.2 +
+        d["turbidity"] * 0.1
+    )
+
+    return score
+
+
+def get_level(score):
+
+    if score >= 80:
+        return "HIGH"
+
+    elif score >= 60:
+        return "MEDIUM"
+
+    else:
+        return "LOW"
+
+
+# =========================
+# ANALYSIS
+# =========================
+scores = []
+levels = []
+
+def analyze():
+
+    scores.clear()
+    levels.clear()
+
+    for name, data in regions.items():
+
+        score = calculate_score(data)
+        level = get_level(score)
+
+        scores.append(score)
+        levels.append(level)
+
+
+# =========================
+# MOST DANGEROUS
+# =========================
+def most_dangerous():
+
+    idx = scores.index(max(scores))
+
+    name = list(regions.keys())[idx]
+
+    return name, scores[idx], levels[idx]
