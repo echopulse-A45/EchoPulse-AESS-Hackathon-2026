@@ -1,0 +1,233 @@
+import time
+import sqlite3
+import random
+import requests
+import matplotlib.pyplot as plt
+from datetime import datetime
+from threading import Thread
+
+# ======================
+# TELEGRAM TOKEN
+# ======================
+TOKEN = "8697261611:AAG-qxjGRXdmb4ylQbsb8J1Oj4DEa6EpCew"
+API = f"https://api.telegram.org/bot{TOKEN}"
+
+# ======================
+# SYSTEM DATA
+# ======================
+users = set()
+memory = {}
+last_update_id = 0
+processed_updates = set()
+
+# ======================
+# REGIONS
+# ======================
+regions = {
+    "Ajloun": {"rain": 72, "humidity": 68, "water": 63},
+    "Petra": {"rain": 55, "humidity": 50, "water": 45},
+    "Wadi Mujib": {"rain": 85, "humidity": 78, "water": 74},
+    "Zarqa": {"rain": 42, "humidity": 46, "water": 38},
+    "Aqaba": {"rain": 18, "humidity": 30, "water": 20}
+}
+
+# ======================
+# DATABASE
+# ======================
+conn = sqlite3.connect("echopulse.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS readings (
+    region TEXT,
+    timestamp TEXT,
+    rain REAL,
+    water_level REAL,
+    humidity REAL,
+    turbidity REAL,
+    score REAL,
+    risk TEXT
+)
+""")
+
+conn.commit()
+
+# ======================
+# SENSOR SIMULATION
+# ======================
+def sensor(prev):
+    change = random.uniform(-4, 4)
+    if random.random() < 0.05:
+        change += random.uniform(10, 15)
+    v = prev + change
+    return max(0, min(100, round(v, 1)))
+
+# ======================
+# LIVE DATA
+# ======================
+def get_data():
+    out = {}
+
+    for r, v in regions.items():
+
+        if r not in memory:
+            memory[r] = v
+
+        rain = sensor(memory[r]["rain"])
+        hum = sensor(memory[r]["humidity"])
+        water = sensor(memory[r]["water"])
+
+        turb = round((water / 10) + random.uniform(0, 2), 1)
+
+        memory[r] = {"rain": rain, "humidity": hum, "water": water}
+
+        out[r] = {
+            "rain": rain,
+            "humidity": hum,
+            "water_level": water,
+            "turbidity": turb
+        }
+
+    return out
+
+# ======================
+# AI SCORE
+# ======================
+def score(d):
+    return round(
+        d["rain"] * 0.35 +
+        d["water_level"] * 0.35 +
+        d["humidity"] * 0.2 +
+        d["turbidity"] * 0.1,
+        2
+    )
+
+def level(s):
+    if s >= 80:
+        return "HIGH"
+    elif s >= 60:
+        return "MEDIUM"
+    return "LOW"
+
+# ======================
+# TELEGRAM SEND
+# ======================
+def send(chat, text):
+    try:
+        requests.post(API + "/sendMessage",
+                      data={"chat_id": chat, "text": text})
+    except:
+        pass
+
+# ======================
+# ANALYSIS + PRINT
+# ======================
+def analyze():
+    data = get_data()
+
+    print("\n========================")
+    print("🌊 ECHOPULSE LIVE REPORT")
+    print("========================")
+
+    names, scores, levels = [], [], []
+
+    for r, d in data.items():
+
+        s = score(d)
+        l = level(s)
+
+        names.append(r)
+        scores.append(s)
+        levels.append(l)
+
+        print(f"\n📍 {r}")
+        print(f"📊 Score: {s}")
+        print(f"⚠ Risk: {l}")
+
+        if l == "HIGH":
+            msg = f"🚨 ALERT {r}\nScore: {s}\nRisk HIGH"
+            for u in users:
+                send(u, msg)
+
+    print("\n========================")
+    print("✅ UPDATED")
+    print("========================\n")
+
+    return names, scores, levels
+
+# ======================
+# GRAPH
+# ======================
+plt.ion()
+plt.figure(figsize=(8,5))
+
+def graph(n, s, l):
+    plt.clf()
+
+    colors = []
+    for i in l:
+        if i == "HIGH":
+            colors.append("red")
+        elif i == "MEDIUM":
+            colors.append("orange")
+        else:
+            colors.append("blue")
+
+    plt.bar(n, s, color=colors)
+    plt.ylim(0, 100)
+    plt.title("EchoPulse Live Risk")
+    plt.pause(0.5)
+    plt.draw()
+
+# ======================
+# TELEGRAM BOT
+# ======================
+def bot():
+    global last_update_id
+
+    while True:
+        try:
+            r = requests.get(API + "/getUpdates",
+                params={"offset": last_update_id + 1, "timeout": 10}).json()
+
+            for u in r["result"]:
+
+                uid = u["update_id"]
+                if uid in processed_updates:
+                    continue
+
+                processed_updates.add(uid)
+                last_update_id = uid
+
+                msg = u.get("message", {})
+                chat = msg.get("chat", {}).get("id")
+                text = msg.get("text", "")
+
+                if text == "/start":
+                    users.add(chat)
+                    send(chat, "🌊 EchoPulse Activated")
+
+                elif text == "/status":
+                    send(chat, "System Running ✔")
+
+        except:
+            pass
+
+        time.sleep(2)
+
+# ======================
+# START BOT THREAD
+# ======================
+Thread(target=bot, daemon=True).start()
+
+# ======================
+# MAIN LOOP
+# ======================
+print("🚀 EchoPulse Running...\n")
+
+while True:
+
+    n, s, l = analyze()
+    graph(n, s, l)
+
+    time.sleep(1800)
