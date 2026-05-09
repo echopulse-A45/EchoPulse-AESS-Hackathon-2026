@@ -13,7 +13,7 @@ Green Radar Systems for Environmental Monitoring
 
 Ajloun National University – Faculty of Information Technology
 
-<img src="22fad993-51ef-4c98-a8fa-7f16191663bf.jpeg" width="100%">
+assets/images/22fad993-51ef-4c98-a8fa-7f16191663bf.jpeg
 
 
  Overview
