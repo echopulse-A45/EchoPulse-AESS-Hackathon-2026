@@ -1,360 +1,230 @@
-import matplotlib.pyplot as plt
-import random
 import requests
+import matplotlib.pyplot as plt
 from datetime import datetime
 
-# =====================================================
-# EchoPulse Smart Flood Monitoring System
-# Advanced Hackathon Edition
-# =====================================================
+# =========================
+# TELEGRAM BOT (PUBLIC)
+# =========================
+TOKEN = "8697261611:AAG-qxjGRXdmb4ylQbsb8J1Oj4DEa6EpCew"
+API = f"https://api.telegram.org/bot{TOKEN}"
+
+users = set()
+
+
+# =========================
+# COLLECT USERS
+# =========================
+def update_users():
+
+    try:
+        data = requests.get(API + "/getUpdates").json()
+
+        for u in data.get("result", []):
+
+            msg = u.get("message")
+
+            if msg:
+
+                chat_id = msg["chat"]["id"]
+
+                users.add(chat_id)
 
+    except:
+        pass
+
+
+def send_all(text):
 
-# =====================================================
-# Region Class
-# =====================================================
+    for u in list(users):
 
-class Region:
+        try:
+            requests.post(API + "/sendMessage", data={
+                "chat_id": u,
+                "text": text
+            })
+        except:
+            pass
 
-    def init(self, name):
 
-        self.name = name
+# =========================
+# REALISTIC DATA (NO RANDOM)
+# =========================
+regions = {
+    "Ajloun": {
+        "rain": 85,
+        "water_level": 80,
+        "humidity": 70,
+        "turbidity": 6
+    },
+    "Petra": {
+        "rain": 75,
+        "water_level": 65,
+        "humidity": 60,
+        "turbidity": 7
+    },
+    "Wadi Mujib": {
+        "rain": 95,
+        "water_level": 92,
+        "humidity": 85,
+        "turbidity": 5
+    },
+    "Zarqa": {
+        "rain": 55,
+        "water_level": 50,
+        "humidity": 45,
+        "turbidity": 12
+    },
+    "Aqaba": {
+        "rain": 35,
+        "water_level": 30,
+        "humidity": 40,
+        "turbidity": 4
+    }
+}
 
-        # =========================================
-        # Dynamic Sensor Readings
-        # =========================================
 
-        self.rainfall = random.randint(40, 100)
+# =========================
+# SCIENTIFIC RISK MODEL
+# =========================
+def calculate_score(d):
 
-        self.water_level = random.randint(35, 100)
+    score = (
+        d["rain"] * 0.35 +
+        d["water_level"] * 0.35 +
+        d["humidity"] * 0.2 +
+        d["turbidity"] * 0.1
+    )
 
-        self.humidity = random.randint(30, 95)
+    return score
 
-        self.temperature = random.randint(18, 35)
 
-        self.ph = round(random.uniform(5.5, 8.5), 1)
+def get_level(score):
 
-        self.turbidity = random.randint(3, 20)
+    if score >= 80:
+        return "HIGH"
+    elif score >= 60:
+        return "MEDIUM"
+    else:
+        return "LOW"
 
-        # =========================================
-        # Analysis Results
-        # =========================================
 
-        self.risk = "Unknown"
+# =========================
+# ANALYSIS
+# =========================
+scores = []
+levels = []
 
-        self.water_quality = "Unknown"
+def analyze():
 
-        self.score = 0
+    scores.clear()
+    levels.clear()
 
+    for name, data in regions.items():
 
-    # =================================================
-    # Flood Risk Analysis
-    # =================================================
+        score = calculate_score(data)
+        level = get_level(score)
 
-    def analyze_risk(self):
+        scores.append(score)
+        levels.append(level)
 
-        self.score = (
 
-            (self.rainfall * 0.4) +
+# =========================
+# FIND MOST DANGEROUS
+# =========================
+def most_dangerous():
 
-            (self.water_level * 0.4) +
+    idx = scores.index(max(scores))
+    name = list(regions.keys())[idx]
 
-            (self.humidity * 0.2)
+    return name, scores[idx], levels[idx]
 
-        )
 
-        if self.score >= 80:
+# =========================
+# ALERT SYSTEM
+# =========================
+def alert():
 
-            self.risk = "High"
+    name, score, level = most_dangerous()
 
-        elif self.score >= 50:
+    if level == "HIGH":
 
-            self.risk = "Medium"
+        data = regions[name]
 
-        else:
+        msg = f"""
+🚨 ECHOPULSE FLOOD ALERT 🚨
 
-            self.risk = "Low"
+📍 Region: {name}
+⚠️ Risk Level: {level}
+📊 Score: {round(score,2)}
 
-        return self.risk
+🌧 Rain: {data['rain']}
+🌊 Water Level: {data['water_level']}
+💨 Humidity: {data['humidity']}
+🧪 Turbidity: {data['turbidity']}
 
-
-    # =================================================
-    # Water Quality Analysis
-    # =================================================
-
-    def analyze_water_quality(self):
-
-        if (
-
-            6.5 <= self.ph <= 8.5 and
-
-            self.turbidity < 10 and
-
-            self.temperature < 35
-
-        ):
-
-            self.water_quality = "Clean Water"
-
-        else:
-
-            self.water_quality = "Polluted Water"
-
-        return self.water_quality
-
-
-# =====================================================
-# EchoPulse Main System
-# =====================================================
-
-class EchoPulseSystem:
-
-    def init(self):
-
-        self.regions = []
-
-        # =========================================
-        # Telegram Bot Configuration
-        # =========================================
-
-        self.bot_token = "8697261611:AAG-qxjGRXdmb4ylQbsb8J1Oj4DEa6EpCew"
-
-        self.chat_id = "8128207004"
-
-        # =========================================
-        # Dynamic Weather System
-        # =========================================
-
-        self.weather = random.choice([
-
-            "Sunny",
-            "Cloudy",
-            "Stormy"
-
-        ])
-
-        # =========================================
-        # Dynamic Solar Energy
-        # =========================================
-
-        if self.weather == "Sunny":
-
-            self.solar_energy_generated = random.randint(1400, 1800)
-
-        elif self.weather == "Cloudy":
-
-            self.solar_energy_generated = random.randint(900, 1300)
-
-        else:
-
-            self.solar_energy_generated = random.randint(500, 900)
-
-        # =========================================
-        # Dynamic Radar Power
-        # =========================================
-
-        self.radar_power = random.randint(40, 80)
-
-        self.standby_power = random.randint(3, 10)
-
-        # =========================================
-        # Traditional System
-        # =========================================
-
-        self.traditional_energy = 2400
-
-        self.smart_energy = 0
-
-        self.saved_energy = 0
-
-        self.saving_percentage = 0
-
-        # =========================================
-        # IoT Sensors
-        # =========================================
-
-        self.sensors = ["Rain Sensor",
-            "Water Level Sensor",
-            "Humidity Sensor",
-            "Temperature Sensor",
-            "pH Sensor",
-            "Turbidity Sensor",
-            "Radar Sensor"
-
-        ]
-
-
-    # =================================================
-    # Add Region
-    # =================================================
-
-    def add_region(self, region):
-
-        self.regions.append(region)
-
-
-    # =================================================
-    # Telegram Alert System
-    # =================================================
-
-    def send_telegram_alert(self, message):
-
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-
-        data = {
-
-            "chat_id": self.chat_id,
-
-            "text": message
-
-        }
-
-        response = requests.post(url, data=data)
-
-        print(response.text)
-
-
-    # =================================================
-    # Emergency Alarm
-    # =================================================
-
-    def activate_alarm(self, region):
-
-        print("\n🚨 EMERGENCY ALERT 🚨")
-
-        print(f"High Flood Risk in {region.name}")
-
-        print("Warning Sirens Activated")
-
-        print("Emergency Teams Notified")
-
-        message = f"""
-🚨 EchoPulse Emergency Alert 🚨
-
-📍 Region: {region.name}
-
-⚠️ Flood Risk: HIGH
-
-🌧 Rainfall: {region.rainfall}
-
-🌊 Water Level: {region.water_level}
-
-💨 Humidity: {region.humidity}
-
-💧 Water Quality: {region.water_quality}
-
-⏰ Immediate action required.
+🕒 {datetime.now()}
 """
 
-        self.send_telegram_alert(message)
+        send_all(msg)
 
 
-    # =================================================
-    # Smart Water Management
-    # =================================================
+# =========================
+# GRAPH (CLEAN)
+# =========================
+def graph():
 
-    def manage_water(self, region):
+    plt.clf()
 
-        if region.water_quality == "Clean Water":
+    x = list(regions.keys())
 
-            print(f"💧 Clean water stored in tanks ({region.name})")
+    plt.bar(x, scores, color="steelblue")
 
-        else:
+    plt.title("EchoPulse Flood Risk Map")
+    plt.ylabel("Risk Score")
 
-            print(f"⚠️ Polluted water drained safely ({region.name})")
+    for i, v in enumerate(scores):
+        plt.text(i, v + 2, levels[i], ha="center")
 
+    plt.xticks(rotation=20)
 
-    # =================================================
-    # AI Flood Prediction
-    # =================================================
-
-    def predict_flood(self, region):
-
-        print(f"\n🤖 AI Monitoring Active in {region.name}")
-
-        if region.risk == "High":
-
-            prediction_time = int(
-
-                100 -
-
-                (
-                    region.rainfall +
-                    region.water_level
-                ) / 2
-
-            )
-
-            prediction_time = max(3, prediction_time)
-
-            print(f"⚠️ Possible flood within {prediction_time} hours")
-
-        else:
-
-            print("✅ No immediate flood danger")
+    plt.pause(0.1)
 
 
-    # =================================================
-    # Smart Radar Activation
-    # =================================================
+# =========================
+# REPORT
+# =========================
+def report():
 
-    def activate_radar(self):
+    name, score, level = most_dangerous()
 
-        active_hours = 0
+    print("\n======================")
+    print("ECHOPULSE REPORT")
+    print("======================")
+    print("Time:", datetime.now())
 
-        for region in self.regions:
+    for i, (n, d) in enumerate(regions.items()):
+        print(f"{n} | Score: {round(scores[i],2)} | Level: {levels[i]}")
 
-            # Analyze flood risk
-            region.analyze_risk()
+    print("\n🔥 MOST DANGEROUS:", name, level)
 
-            # Analyze water quality
-            region.analyze_water_quality()
 
-            # AI prediction
-            self.predict_flood(region)
+# =========================
+# MAIN LOOP
+# =========================
+print("EchoPulse System Running...")
 
-            # =====================================
-            # Smart Radar Logic
-            # =====================================
+plt.ion()
+plt.figure(figsize=(8,5))
 
-            if region.risk == "High":
+while True:
 
-                active_hours += 6
+    update_users()
+    analyze()
+    report()
+    alert()
+    graph()
 
-                self.activate_alarm(region)
+    send_all("📡 EchoPulse System Updated Successfully")
 
-            elif region.risk == "Medium":
-
-                active_hours += 3
-
-            else:
-
-                active_hours += 1
-
-            # Water management
-            self.manage_water(region)
-
-        # Maximum 24 hours
-        active_hours = min(active_hours, 24)
-
-        # =====================================
-        # Smart Energy Calculation
-        # =====================================
-
-        self.smart_energy = (
-
-            (active_hours * self.radar_power) +
-
-            ((24 - active_hours) * self.standby_power)
-
-        )
-
-        # =====================================
-        # Energy Saving
-        # =====================================
-
-        self.saved_energy = (
-
-            self.traditional_energy -
-            self.smart_energy
-
-        )
+    import time
+    time.sleep(1800)
