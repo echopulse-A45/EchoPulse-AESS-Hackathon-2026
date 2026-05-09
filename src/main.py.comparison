@@ -1,0 +1,125 @@
+import random
+import matplotlib.pyplot as plt
+
+# ======================
+# INPUT DATA
+# ======================
+def get_data():
+    return {
+        "rain": random.uniform(10, 100),
+        "humidity": random.uniform(10, 100),
+        "water": random.uniform(10, 100),
+        "noise": random.uniform(5, 40)
+    }
+
+# ======================
+# NORMAL SYSTEM
+# ======================
+def normal_system(d):
+    score = (
+        d["rain"] * 0.35 +
+        d["humidity"] * 0.25 +
+        d["water"] * 0.3 +
+        d["noise"] * 0.1
+    )
+    return score, 100, 0.8
+
+# ======================
+# ADAPTIVE SYSTEM
+# ======================
+def adaptive_system(d):
+
+    weights = {
+        "rain": 0.35,
+        "humidity": 0.25,
+        "water": 0.3,
+        "noise": 0.1
+    }
+
+    if d["noise"] > 25:
+        weights["noise"] = 0.05
+        weights["water"] = 0.35
+
+    score = (
+        d["rain"] * weights["rain"] +
+        d["humidity"] * weights["humidity"] +
+        d["water"] * weights["water"] +
+        d["noise"] * weights["noise"]
+    )
+
+    return score, 65, 0.4
+
+# ======================
+# TEST
+# ======================
+def run_test(samples=10):
+
+    normal = {"score": 0, "energy": 0, "time": 0}
+    adaptive = {"score": 0, "energy": 0, "time": 0}
+
+    for i in range(samples):
+
+        data = get_data()
+
+        ns, ne, nt = normal_system(data)
+        as_, ae, at = adaptive_system(data)
+
+        normal["score"] += ns
+        normal["energy"] += ne
+        normal["time"] += nt
+
+        adaptive["score"] += as_
+        adaptive["energy"] += ae
+        adaptive["time"] += at
+
+    for k in normal:
+        normal[k] /= samples
+        adaptive[k] /= samples
+
+    return normal, adaptive
+
+# ======================
+# REPORT + GRAPH
+# ======================
+def report_and_graph(n, a):
+
+    print("\n==============================")
+    print("📊 FINAL COMPARISON")
+    print("==============================\n")
+
+    print("🔵 NORMAL SYSTEM")
+    print(f"Score  : {n['score']:.2f}")
+    print(f"Energy : {n['energy']:.2f}")
+    print(f"Time   : {n['time']:.2f}s")
+
+    print("\n🟢 ADAPTIVE SYSTEM")
+    print(f"Score  : {a['score']:.2f}")
+    print(f"Energy : {a['energy']:.2f}")
+    print(f"Time   : {a['time']:.2f}s")
+
+    # ======================
+    # GRAPH
+    # ======================
+    labels = ["Score", "Energy", "Time"]
+
+    normal_values = [n["score"], n["energy"], n["time"] * 100]
+    adaptive_values = [a["score"], a["energy"], a["time"] * 100]
+
+    x = range(len(labels))
+
+    plt.figure(figsize=(8,5))
+
+    plt.bar(x, normal_values, width=0.4, label="Normal", color="blue")
+    plt.bar([i + 0.4 for i in x], adaptive_values, width=0.4, label="Adaptive", color="green")
+
+    plt.xticks([i + 0.2 for i in x], labels)
+    plt.title("System Comparison (Normal vs Adaptive)")
+    plt.legend()
+
+    plt.show()
+
+# ======================
+# RUN
+# ======================
+normal, adaptive = run_test(10)
+report_and_graph(normal, adaptive)
