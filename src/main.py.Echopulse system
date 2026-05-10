@@ -26,7 +26,7 @@ processed_updates = set()
 regions = {
     "Ajloun": {"rain": 72, "humidity": 68, "water": 63},
     "Petra": {"rain": 55, "humidity": 50, "water": 45},
-    "Wadi Mujib": {"rain": 85, "humidity": 78, "water": 74},
+    "Wadi Mujib": {"rain": 100, "humidity": 100, "water": 100},
     "Zarqa": {"rain": 42, "humidity": 46, "water": 38},
     "Aqaba": {"rain": 18, "humidity": 30, "water": 20}
 }
@@ -230,4 +230,4 @@ while True:
     n, s, l = analyze()
     graph(n, s, l)
 
-    time.sleep(1800)
+    time.sleep(10)
