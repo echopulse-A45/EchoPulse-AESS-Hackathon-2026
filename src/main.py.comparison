@@ -1,5 +1,4 @@
 import random
-import matplotlib.pyplot as plt
 
 # ======================
 # INPUT DATA
@@ -57,7 +56,7 @@ def run_test(samples=10):
     normal = {"score": 0, "energy": 0, "time": 0}
     adaptive = {"score": 0, "energy": 0, "time": 0}
 
-    for i in range(samples):
+    for _ in range(samples):
 
         data = get_data()
 
@@ -79,12 +78,12 @@ def run_test(samples=10):
     return normal, adaptive
 
 # ======================
-# REPORT + GRAPH
+# REPORT (TELEGRAM FRIENDLY)
 # ======================
-def report_and_graph(n, a):
+def report(n, a):
 
     print("\n==============================")
-    print("📊 FINAL COMPARISON")
+    print("📊 SYSTEM COMPARISON REPORT")
     print("==============================\n")
 
     print("🔵 NORMAL SYSTEM")
@@ -98,28 +97,18 @@ def report_and_graph(n, a):
     print(f"Time   : {a['time']:.2f}s")
 
     # ======================
-    # GRAPH
+    # DIFFERENCE (IMPORTANT PART)
     # ======================
-    labels = ["Score", "Energy", "Time"]
+    print("\n📌 DIFFERENCE")
 
-    normal_values = [n["score"], n["energy"], n["time"] * 100]
-    adaptive_values = [a["score"], a["energy"], a["time"] * 100]
+    print(f"Score Improvement  : {a['score'] - n['score']:.2f}")
+    print(f"Energy Saving      : {n['energy'] - a['energy']:.2f}")
+    print(f"Time Improvement   : {n['time'] - a['time']:.2f}s")
 
-    x = range(len(labels))
-
-    plt.figure(figsize=(8,5))
-
-    plt.bar(x, normal_values, width=0.4, label="Normal", color="blue")
-    plt.bar([i + 0.4 for i in x], adaptive_values, width=0.4, label="Adaptive", color="green")
-
-    plt.xticks([i + 0.2 for i in x], labels)
-    plt.title("System Comparison (Normal vs Adaptive)")
-    plt.legend()
-
-    plt.show()
+    print("\n==============================")
 
 # ======================
 # RUN
 # ======================
 normal, adaptive = run_test(10)
-report_and_graph(normal, adaptive)
+report(normal, adaptive)
